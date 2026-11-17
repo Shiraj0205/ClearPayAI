@@ -1,0 +1,18 @@
+
+uv python install 3.14
+
+uv init --python 3.14
+
+# Make required Directories
+md app\agents app\api app\db app\ingestion app\services app\ui 
+md tests
+md web\public web\srv
+
+# Create __init__.py file is a special file used in Python to mark a directory on your computer as an importable Python package
+for %i in (agents api db ingestion services ui) do type nul > app\%i\__init__.py
+for %i in (public src) do type nul > web\%i\__init__.py
+
+
+# Install make on Windows (powershell)
+winget install ezwinports.make
+
