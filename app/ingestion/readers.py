@@ -6,6 +6,7 @@ import base64
 import os
 import io
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import PurePath
 from typing import List, Union
@@ -13,8 +14,10 @@ from typing import List, Union
 from pypdf import PdfReader
 import pandas as pd
 
-from app.agents.llm_agent import read_pdf
 
+# pypdf logs a warning when a PDF's cross-reference offset is slightly off ("incorrect startxref pointer")
+# and then repairs it itself. Only show real errors.
+logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 MIN_TEXT_CHARS_PER_PAGE = 50  # below this, treat a page as a scan with no usable text layer
 
@@ -56,8 +59,8 @@ def detect_format(filename: str, data: bytes) -> str:
             return DocumentFormat.SCANNED_PDF
         
         if texts and all(len(t) < MIN_TEXT_CHARS_PER_PAGE for t in texts):
-            return DocumentFormat.DIGITAL_PDF
-        return DocumentFormat.SCANNED_PDF
+            return DocumentFormat.SCANNED_PDF
+        return DocumentFormat.DIGITAL_PDF
     
     return DocumentFormat.UNKNOWN
 
@@ -73,7 +76,12 @@ def read_document(filename: str, data: bytes, max_pages: int = 60) -> ReadResult
         reader = PdfReader(io.BytesIO(data))
         result.page_texts = [(page.extract_text() or "").strip() for page in reader.pages]
     elif fmt == DocumentFormat.SCANNED_PDF:
-        result.page_needing_vision = list(range(len(read_pdf(io.BytesIO(data)))))
+        page_count = len(PdfReader(io.BytesIO(data)).pages)
+        result.page_texts = [""] * page_count  # one slot per page, filled in later by vision
+        result.page_needing_vision = list(range(page_count))
+    elif fmt == DocumentFormat.IMAGE:
+        result.page_texts = [""]
+        result.page_needing_vision = [0]
     elif fmt == DocumentFormat.SPREADSHEET:
         try:
             df = pd.read_excel(io.BytesIO(data)) if filename.lower().endswith((".xls", ".xlsx")) else pd.read_csv(io.BytesIO(data))
@@ -90,7 +98,8 @@ def render_image(filename: str, data: bytes, page_index: int, scale: float = 2.0
         return data
     
     import pypdfium2 as pdfium
-    pdf = pdfium.PdfDocument(io.BytesIO(data))
+    
+    pdf = pdfium.PdfDocument(data)
     page = pdf[page_index]
     image = page.render(scale=scale).to_pil()
     buf = io.BytesIO()
