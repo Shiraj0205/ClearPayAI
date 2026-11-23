@@ -12,7 +12,7 @@ from langchain.agents.structured_output import ToolStrategy
 from langchain.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from app.schemas import Invoice, Shipping, Certificate, DocumentType
+from app.schemas import Invoice, Shipping, Certificate, DocumentClassification
 from app.agents.llm_agent import read_file
 
 MODEL = ChatGoogleGenerativeAI(
@@ -73,7 +73,7 @@ def read_document(file_path: str) -> list:
         return {**done[fingerprint], "skipped": True}
 
     content = read_file(file_path)
-    document_type = ask(DocumentType, "Classify the type of document being processed.", content).documentType
+    document_type = ask(DocumentClassification, "Classify the type of document being processed.", content).documentType
     fields = ask(FORMS[document_type], f"Extract structured data from a {document_type} document.", content).model_dump() if document_type in FORMS else {}
     row = { 
         "file": os.path.basename(file_path), 

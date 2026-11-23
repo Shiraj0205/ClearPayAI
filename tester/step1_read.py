@@ -5,7 +5,7 @@ government JSON  -> mapped to a form by plain code
   spreadsheet      -> each sheet becomes a page of text
   scan or photo    -> only these need a vision model (step 3b)
 
-Run Command: uv run --env-file .env python -m tester.1_read
+Run Command: uv run --env-file .env python -m tester.step1_read
 
 """
 

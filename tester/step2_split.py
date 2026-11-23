@@ -4,7 +4,7 @@ A scan has no text, so a vision model copies each page into text (and the answer
 Then ordinary rules decide where one paper ends: a page that starts with a title (INVOICE, PACKING LIST, ...) starts a new paper;
 a page without a title continues the paper before it.
 
-Run Command: uv run --env-file .env python -m tester.2_split
+Run Command: uv run --env-file .env python -m tester.step2_split
 """
 
 import base64
